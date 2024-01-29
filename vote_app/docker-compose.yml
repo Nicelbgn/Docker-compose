@@ -1,0 +1,70 @@
+version: "3"
+
+services:
+  # Service Node.js
+  nodejs:
+    build:
+      context: ./result/Dockerfile # Chemin vers le Dockerfile du service Node.js
+    ports:
+      - "4000:4000" # Port exposé : 4000 (local) -> 4000 (container)
+    networks:
+      - internal # Utilisation du réseau interne
+
+  # Service Python Flask
+  python:
+    build:
+      context: ./vote/Dockerfile # Chemin vers le Dockerfile du service Python Flask
+    ports:
+      - "5000:5000" # Port exposé : 5000 (local) -> 5000 (container)
+    networks:
+      - internal # Utilisation du réseau interne
+
+  # Service Worker (.NET)
+  worker:
+    build:
+      context: ./worker/Dockerfile # Chemin vers le Dockerfile du service Worker
+    networks:
+      - internal # Utilisation du réseau interne
+
+  # Service PostgreSQL
+  postgres:
+    image: postgres # Image Docker de PostgreSQL
+    environment:
+      POSTGRES_USER: postgres # Utilisateur de la base de données
+      POSTGRES_PASSWORD: postgres # Mot de passe de l'utilisateur
+      POSTGRES_DB: postgres # Nom de la base de données
+    volumes:
+      - postgres-data:/var/lib/postgresql/data # Volume pour persistance des données
+    ports:
+      - "5432:5432" # Port exposé : 5432 (local) -> 5432 (container)
+    networks:
+      - internal # Utilisation du réseau interne
+
+  # Service Redis
+  redis:
+    image: redis # Image Docker de Redis
+    ports:
+      - "6379:6379" # Port exposé : 6379 (local) -> 6379 (container)
+    networks:
+      - internal # Utilisation du réseau interne
+
+  # Service Traefik
+  traefik:
+    image: traefik:v2.3 # Image Docker de Traefik (version 2.3)
+    command:
+      - "--api.insecure=true" # Activation de l'API Traefik sans sécurité
+      - "--providers.docker" # Utilisation de Docker comme fournisseur
+      - "--entryPoints.web.address=:80" # Point d'entrée web sur le port 80
+    ports:
+      - "80:80" # Port HTTP exposé : 80 (local) -> 80 (container)
+      - "8080:8080" # Port de l'API Traefik : 8080 (local) -> 8080 (container)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # Montage du socket Docker pour Traefik
+    networks:
+      - internal # Utilisation du réseau interne
+
+networks:
+  internal: # Définition du réseau interne
+
+volumes:
+  postgres-data: # Définition du volume pour les données PostgreSQL
